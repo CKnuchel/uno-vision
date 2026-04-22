@@ -1,0 +1,5 @@
+# Nur backend wird gebraucht
+ml/
+app/
+.git
+*.md

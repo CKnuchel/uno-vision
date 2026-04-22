@@ -1,0 +1,10 @@
+# ML Datasets und Modelle (zu gross)
+ml/datasets/
+ml/**/*.pt
+ml/**/*.weights
+ml/**/runs/
+
+# DB und Uploads
+backend/sqlite.db
+backend/uploads/
+*.env
