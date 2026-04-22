@@ -1,0 +1,4 @@
+sqlite.db
+uploads/
+*.env
+backend/bin/

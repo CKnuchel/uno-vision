@@ -1,0 +1,19 @@
+# Development
+*.db
+*.env
+
+# Git
+.git
+.gitignore
+
+# Binary outputs
+bin/
+
+# Uploads (werden via Volume gemountet)
+uploads/
+
+# Tests
+*_test.go
+
+# Documentation
+*.md
