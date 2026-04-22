@@ -1,0 +1,7 @@
+# Datasets sind zu gross für Git
+ml/datasets/
+ml/**/*.pt
+ml/**/*.weights
+
+# Trainings-Outputs
+ml/**/runs/
