@@ -8,4 +8,5 @@ type Round struct {
 	Party    Party
 	WinnerID *uint
 	Winner   *Player
+	Scores   []RoundScore `gorm:"constraint:OnDelete:CASCADE"`
 }

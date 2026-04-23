@@ -10,6 +10,9 @@ import (
 func Setup(partyHandler *handlers.PartyHandler, wsHandler *handlers.WSHandler) *gin.Engine {
 	router := gin.Default()
 
+	// Static file server für Bilder
+	router.Static("/uploads", "./uploads")
+
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
@@ -25,6 +28,7 @@ func Setup(partyHandler *handlers.PartyHandler, wsHandler *handlers.WSHandler) *
 		v1.POST("/party/:id/restart", partyHandler.RestartParty)
 
 		// Round routes
+		v1.GET("/party/:id/rounds", partyHandler.GetRoundHistory)
 		v1.POST("/party/:id/round/winner", partyHandler.ReportWinner)
 		v1.POST("/party/:id/round/score", partyHandler.SubmitScore)
 

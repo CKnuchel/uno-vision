@@ -175,6 +175,24 @@ func (h *PartyHandler) RestartParty(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// GetRoundHistory handles GET /api/v1/party/:id/rounds
+func (h *PartyHandler) GetRoundHistory(c *gin.Context) {
+	// Parse party ID from URL
+	partyID, err := parsePartyID(c)
+	if err != nil {
+		return
+	}
+
+	// Call service
+	resp, err := h.service.GetRoundHistory(c.Request.Context(), partyID)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
 // parsePartyID parses and validates the party ID from the URL parameter
 func parsePartyID(c *gin.Context) (uint, error) {
 	partyID, err := strconv.ParseUint(c.Param("id"), 10, 32)

@@ -10,10 +10,28 @@ import (
 type RoundRepository interface {
 	Create(ctx context.Context, round *models.Round) error
 	FindByID(ctx context.Context, id uint) (*models.Round, error)
+	FindByPartyID(ctx context.Context, partyID uint) ([]models.Round, error)
 }
 
 type roundRepository struct {
 	db *gorm.DB
+}
+
+// FindByPartyID implements [RoundRepository].
+func (r *roundRepository) FindByPartyID(ctx context.Context, partyID uint) ([]models.Round, error) {
+	var rounds []models.Round
+
+	err := r.db.WithContext(ctx).
+		Preload("Winner").
+		Preload("Scores.Player").
+		Where("party_id = ?", partyID).
+		Order("created_at ASC").
+		Find(&rounds).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return rounds, nil
 }
 
 // Create implements [RoundRepository].

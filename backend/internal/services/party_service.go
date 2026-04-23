@@ -24,6 +24,7 @@ type PartyService interface {
 	GetPartyStatus(ctx context.Context, partyID uint) (*dto.PartyStatusResponse, error)
 	GetPlayerIDByUUID(ctx context.Context, partyID uint, uuid string) (uint, error)
 	RestartParty(ctx context.Context, partyID uint, req *dto.PartyRestartRequest) (*dto.PartyRestartResponse, error)
+	GetRoundHistory(ctx context.Context, partyID uint) ([]dto.RoundHistoryDTO, error)
 }
 
 type partyService struct {
@@ -52,10 +53,6 @@ func NewPartyService(
 		hub:             hub,
 	}
 }
-
-// ─────────────────────────────────────────────
-// Public Methods
-// ─────────────────────────────────────────────
 
 // CreateParty implements [PartyService].
 func (s *partyService) CreateParty(ctx context.Context, req *dto.CreatePartyRequest) (*dto.CreatePartyResponse, error) {
@@ -486,6 +483,56 @@ func (s *partyService) createPartyWithPlayers(ctx context.Context, mode models.P
 	}
 
 	return party, nil
+}
+
+// GetRoundHistory implements [PartyService].
+func (s *partyService) GetRoundHistory(ctx context.Context, partyID uint) ([]dto.RoundHistoryDTO, error) {
+	// Find party
+	_, err := s.partyRepo.FindByID(ctx, partyID)
+	if err != nil {
+		return nil, errors.ErrPartyNotFound
+	}
+
+	// Load all rounds with scores and players
+	rounds, err := s.roundRepo.FindByPartyID(ctx, partyID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build response
+	history := make([]dto.RoundHistoryDTO, len(rounds))
+	for i, round := range rounds {
+		// Build scores list
+		scores := make([]dto.RoundScoreDTO, len(round.Scores))
+		for j, score := range round.Scores {
+			var imageURL *string
+			if score.ImagePath != nil {
+				url := fmt.Sprintf("/uploads/%d/%d/%s.jpg",
+					partyID, round.ID, score.Player.UUID)
+				imageURL = &url
+			}
+			scores[j] = dto.RoundScoreDTO{
+				PlayerName: score.Player.Name,
+				Points:     score.Points,
+				ImageURL:   imageURL,
+			}
+		}
+
+		// Winner name
+		winnerName := ""
+		if round.Winner != nil {
+			winnerName = round.Winner.Name
+		}
+
+		history[i] = dto.RoundHistoryDTO{
+			RoundID:    round.ID,
+			WinnerName: winnerName,
+			CreatedAt:  round.CreatedAt,
+			Scores:     scores,
+		}
+	}
+
+	return history, nil
 }
 
 // saveImage decodes a base64 image and saves it to disk, returns the file path
