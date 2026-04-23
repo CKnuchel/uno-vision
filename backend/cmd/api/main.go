@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/CKnuchel/uno-vision/internal/cleanup"
 	"github.com/CKnuchel/uno-vision/internal/config"
 	"github.com/CKnuchel/uno-vision/internal/database"
 	"github.com/CKnuchel/uno-vision/internal/handlers"
@@ -22,6 +23,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// Data Cleanup Job
+	cleanup.Start(db)
 
 	// WebSocket Hub
 	wsHub := hub.NewHub()
