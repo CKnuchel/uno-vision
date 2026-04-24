@@ -8,3 +8,6 @@ ml/**/runs/
 backend/sqlite.db
 backend/uploads/
 *.env
+
+# IDE
+.vscode/
