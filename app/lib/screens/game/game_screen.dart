@@ -70,6 +70,15 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     ))
                 .toList();
             _submittedPlayers.add(event.payload['player_name']);
+
+            // Alle haben eingereicht (Winner + alle Verlierer) → Runde fertig
+            if (_submittedPlayers.length >= _players.length) {
+              _roundWinnerName = null;
+              _currentRoundId = null;
+              _hasReportedWin = false;
+              _hasSubmittedScore = false;
+              _submittedPlayers.clear();
+            }
           });
         }
 
