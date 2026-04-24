@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
 
   # Go API Backend
-  # Cloudflare Tunnel: api.uno-vision.your-domain.com -> localhost:3011
+  # Cloudflare Tunnel: api-uno-vision.your-domain.com -> localhost:3011
   api:
     build:
       context: ./backend

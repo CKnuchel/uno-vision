@@ -9,8 +9,8 @@ import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 // PRODUCTION CONFIG - Hier deine Domain eintragen!
 // =============================================================================
 const String productionApiUrl =
-    'https://api.uno-vision.DEINE-DOMAIN.com/api/v1';
-const String productionWsUrl = 'wss://api.uno-vision.DEINE-DOMAIN.com/api/v1';
+    'https://api-uno-vision.your-domain.com/api/v1';
+const String productionWsUrl = 'wss://api-uno-vision.your-domain.com/api/v1';
 
 // =============================================================================
 // Debug URLs (für lokale Entwicklung)

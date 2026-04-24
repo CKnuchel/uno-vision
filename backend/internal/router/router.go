@@ -4,11 +4,21 @@ import (
 	"net/http"
 
 	"github.com/CKnuchel/uno-vision/internal/handlers"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func Setup(partyHandler *handlers.PartyHandler, wsHandler *handlers.WSHandler) *gin.Engine {
 	router := gin.Default()
+
+	// CORS middleware
+	// TODO: Change AllowOrigins to your production domain
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"https://uno-vision.your-domain.com", "http://localhost:*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowCredentials: true,
+	}))
 
 	// Static file server für Bilder
 	router.Static("/uploads", "./uploads")

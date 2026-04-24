@@ -115,21 +115,31 @@ nano app/lib/core/constants/api_config.dart
 
 **2. Update the production URLs**
 ```dart
-const String productionApiUrl = 'https://api.your-domain.com/api/v1';
-const String productionWsUrl = 'wss://api.your-domain.com/api/v1';
+const String productionApiUrl = 'https://api-uno-vision.your-domain.com/api/v1';
+const String productionWsUrl = 'wss://api-uno-vision.your-domain.com/api/v1';
 ```
 
-**3. Start the containers**
+**3. Configure CORS in the backend**
+
+Edit `backend/internal/router/router.go` and update the CORS origin:
+```go
+AllowOrigins: []string{"https://uno-vision.your-domain.com", "http://localhost:*"},
+```
+
+**4. Start the containers**
 ```bash
 docker compose up -d --build
 ```
 
-**4. Configure your reverse proxy / Cloudflare Tunnel**
+**5. Configure your reverse proxy / Cloudflare Tunnel**
+
+> **Important:** Use `api-uno-vision` (with hyphen), not `api.uno-vision` (with dot).
+> Wildcard SSL certificates only cover one subdomain level (`*.domain.com`).
 
 | Service | Internal Port | Domain |
 |---------|---------------|--------|
-| Web App | 3000 | `uno-vision.your-domain.com` |
-| API | 3001 | `api.uno-vision.your-domain.com` |
+| Web App | 3010 | `uno-vision.your-domain.com` |
+| API | 3011 | `api-uno-vision.your-domain.com` |
 
 ### Manual APK Installation
 
