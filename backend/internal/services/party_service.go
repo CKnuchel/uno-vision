@@ -201,6 +201,7 @@ func (s *partyService) ReportWinner(ctx context.Context, partyID uint, req *dto.
 
 	s.hub.Broadcast(partyID, hub.EventRoundWinner, hub.RoundWinnerPayload{
 		PlayerName: player.Name,
+		RoundID:    round.ID,
 	})
 
 	return &dto.RoundWinnerResponse{RoundID: round.ID}, nil

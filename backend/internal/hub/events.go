@@ -16,6 +16,7 @@ type PlayerJoinedPayload struct {
 
 type RoundWinnerPayload struct {
 	PlayerName string `json:"player_name"`
+	RoundID    uint   `json:"round_id"`
 }
 
 type ScoreUpdatePayload struct {

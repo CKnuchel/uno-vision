@@ -52,7 +52,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       case WsEvents.roundWinner:
         setState(() {
           _roundWinnerName = event.payload['player_name'];
+          _currentRoundId = event.payload['round_id'];
           _hasReportedWin = false;
+          _hasSubmittedScore = false;
           _submittedPlayers.clear();
           _submittedPlayers.add(event.payload['player_name']);
         });
