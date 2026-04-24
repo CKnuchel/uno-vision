@@ -16,7 +16,11 @@ class LobbyScreen extends ConsumerStatefulWidget {
   final Party party;
   final bool isHost;
 
-  const LobbyScreen({super.key, required this.party, required this.isHost});
+  const LobbyScreen({
+    super.key,
+    required this.party,
+    required this.isHost,
+  });
 
   @override
   ConsumerState<LobbyScreen> createState() => _LobbyScreenState();
@@ -54,9 +58,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
   Future<void> _refreshParty() async {
     try {
-      final updated = await ref
-          .read(partyServiceProvider)
-          .getPartyStatus(_party.id);
+      final updated =
+          await ref.read(partyServiceProvider).getPartyStatus(_party.id);
       if (mounted) setState(() => _party = updated);
     } catch (_) {}
   }
@@ -134,10 +137,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                   // App Bar
                   Row(
                     children: [
-                      Text(
-                        'UNO Vision',
-                        style: AppTextStyles.titleLarge(context),
-                      ),
+                      Text('UNO Vision',
+                          style: AppTextStyles.titleLarge(context)),
                     ],
                   ),
 
@@ -169,14 +170,15 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         children: [
                           Text(
                             'Party Code',
-                            style: AppTextStyles.bodyMedium(
-                              context,
-                            ).copyWith(color: AppColors.textSecondaryDark),
+                            style: AppTextStyles.bodyMedium(context).copyWith(
+                              color: AppColors.textSecondaryDark,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             _party.code.split('').join(' '),
-                            style: AppTextStyles.displayLarge(context).copyWith(
+                            style:
+                                AppTextStyles.displayLarge(context).copyWith(
                               letterSpacing: 8,
                               color: AppColors.primary,
                             ),
@@ -185,17 +187,16 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
-                                Icons.copy,
-                                size: 14,
-                                color: AppColors.textSecondaryDark,
-                              ),
+                              const Icon(Icons.copy,
+                                  size: 14,
+                                  color: AppColors.textSecondaryDark),
                               const SizedBox(width: 4),
                               Text(
                                 'Tippen zum Kopieren',
-                                style: AppTextStyles.bodyMedium(
-                                  context,
-                                ).copyWith(color: AppColors.textSecondaryDark),
+                                style: AppTextStyles.bodyMedium(context)
+                                    .copyWith(
+                                  color: AppColors.textSecondaryDark,
+                                ),
                               ),
                             ],
                           ),
@@ -209,25 +210,21 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                   // Spieler Header
                   Row(
                     children: [
-                      Text(
-                        'Spieler',
-                        style: AppTextStyles.titleMedium(context),
-                      ),
+                      Text('Spieler',
+                          style: AppTextStyles.titleMedium(context)),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: AppColors.primary.withValues(alpha: 0.15),
                         ),
                         child: Text(
                           '${_party.players.length}',
-                          style: AppTextStyles.labelMedium(
-                            context,
-                          ).copyWith(color: AppColors.primary),
+                          style: AppTextStyles.labelMedium(context).copyWith(
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
@@ -239,49 +236,47 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                   Expanded(
                     child: ListView.separated(
                       itemCount: _party.players.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final player = _party.players[index];
                         final isHost = index == 0;
                         return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.05)
-                                    : Colors.white,
-                                border: Border.all(
-                                  color: isHost
-                                      ? AppColors.primary.withValues(alpha: 0.3)
-                                      : Colors.transparent,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.white,
+                            border: Border.all(
+                              color: isHost
+                                  ? AppColors.primary.withValues(alpha: 0.3)
+                                  : Colors.transparent,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              if (isHost)
+                                const Text('👑 ',
+                                    style: TextStyle(fontSize: 18))
+                              else
+                                const SizedBox(width: 26),
+                              Text(
+                                player.name,
+                                style: AppTextStyles.bodyLarge(context)
+                                    .copyWith(
+                                  fontWeight: isHost
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  if (isHost)
-                                    const Text(
-                                      '👑 ',
-                                      style: TextStyle(fontSize: 18),
-                                    )
-                                  else
-                                    const SizedBox(width: 26),
-                                  Text(
-                                    player.name,
-                                    style: AppTextStyles.bodyLarge(context)
-                                        .copyWith(
-                                          fontWeight: isHost
-                                              ? FontWeight.w600
-                                              : FontWeight.normal,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            )
+                            ],
+                          ),
+                        )
                             .animate()
-                            .fadeIn(delay: Duration(milliseconds: index * 100))
+                            .fadeIn(
+                                delay: Duration(milliseconds: index * 100))
                             .slideX(begin: -0.2, end: 0);
                       },
                     ),
@@ -296,9 +291,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Text(
                           'Mindestens 2 Spieler benötigt',
-                          style: AppTextStyles.bodyMedium(
-                            context,
-                          ).copyWith(color: AppColors.textSecondaryDark),
+                          style: AppTextStyles.bodyMedium(context).copyWith(
+                            color: AppColors.textSecondaryDark,
+                          ),
                         ),
                       ),
                     PrimaryButton(
@@ -312,11 +307,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                              'Warten auf Host... ⏳',
-                              style: AppTextStyles.bodyLarge(
-                                context,
-                              ).copyWith(color: AppColors.textSecondaryDark),
-                            )
+                          'Warten auf Host... ⏳',
+                          style: AppTextStyles.bodyLarge(context).copyWith(
+                            color: AppColors.textSecondaryDark,
+                          ),
+                        )
                             .animate(onPlay: (c) => c.repeat())
                             .fadeIn(duration: 800.ms)
                             .then()

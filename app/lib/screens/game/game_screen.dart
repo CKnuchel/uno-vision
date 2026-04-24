@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/constants/storage_keys.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../game/results_screen.dart';
@@ -39,8 +38,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   }
 
   Future<void> _init() async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.getString(StorageKeys.playerUUID);
+    await SharedPreferences.getInstance();
 
     final ws = ref.read(websocketServiceProvider);
     ws.events.listen((event) {
@@ -64,12 +62,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         if (scores != null) {
           setState(() {
             _players = scores
-                .map(
-                  (s) => Player(
-                    name: s['player_name'],
-                    totalScore: s['total_score'],
-                  ),
-                )
+                .map((s) => Player(
+                      name: s['player_name'],
+                      totalScore: s['total_score'],
+                    ))
                 .toList();
             _submittedPlayers.add(event.payload['player_name']);
           });
@@ -80,12 +76,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         final winnerName = event.payload['winner_name'];
         if (scores != null) {
           final players = scores
-              .map(
-                (s) => Player(
-                  name: s['player_name'],
-                  totalScore: s['total_score'],
-                ),
-              )
+              .map((s) => Player(
+                    name: s['player_name'],
+                    totalScore: s['total_score'],
+                  ))
               .toList();
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
@@ -103,9 +97,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   Future<void> _reportWin() async {
     setState(() => _isReportingWin = true);
     try {
-      final roundId = await ref
-          .read(partyServiceProvider)
-          .reportWinner(_party.id);
+      final roundId =
+          await ref.read(partyServiceProvider).reportWinner(_party.id);
       setState(() {
         _currentRoundId = roundId;
         _hasReportedWin = true;
@@ -134,7 +127,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       builder: (_) => Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: EdgeInsets.only(
           left: 24,
@@ -157,7 +151,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Text('Punkte eingeben', style: AppTextStyles.titleLarge(context)),
+            Text('Punkte eingeben',
+                style: AppTextStyles.titleLarge(context)),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
@@ -193,9 +188,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   Future<void> _submitScore(int points) async {
     if (_currentRoundId == null) return;
     try {
-      await ref
-          .read(partyServiceProvider)
-          .submitScore(
+      await ref.read(partyServiceProvider).submitScore(
             partyId: _party.id,
             roundId: _currentRoundId!,
             points: points,
@@ -247,35 +240,34 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          color: AppColors.primary.withValues(alpha: 0.15),
+                          color:
+                              AppColors.primary.withValues(alpha: 0.15),
                         ),
                         child: Text(
                           isGolfMode ? '⛳ Golf' : '🏆 Classic',
-                          style: AppTextStyles.labelMedium(
-                            context,
-                          ).copyWith(color: AppColors.primary),
+                          style:
+                              AppTextStyles.labelMedium(context).copyWith(
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           color: Colors.grey.withValues(alpha: 0.15),
                         ),
                         child: Text(
                           '${_party.targetScore} Pkt.',
-                          style: AppTextStyles.labelMedium(
-                            context,
-                          ).copyWith(color: AppColors.textSecondaryDark),
+                          style:
+                              AppTextStyles.labelMedium(context).copyWith(
+                            color: AppColors.textSecondaryDark,
+                          ),
                         ),
                       ),
                     ],
@@ -284,24 +276,24 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                   const SizedBox(height: 24),
 
                   // Rangliste
-                  Text(
-                    'Rangliste',
-                    style: AppTextStyles.titleMedium(context),
-                  ).animate().fadeIn(delay: 100.ms),
+                  Text('Rangliste',
+                          style: AppTextStyles.titleMedium(context))
+                      .animate()
+                      .fadeIn(delay: 100.ms),
                   const SizedBox(height: 8),
-                  ScoreCard(
-                    players: _players,
-                    isGolfMode: isGolfMode,
-                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+                  ScoreCard(players: _players, isGolfMode: isGolfMode)
+                      .animate()
+                      .fadeIn(delay: 200.ms)
+                      .slideY(begin: 0.2, end: 0),
 
                   const SizedBox(height: 24),
 
                   // Aktuelle Runde
                   if (_roundWinnerName != null) ...[
-                    Text(
-                      'Aktuelle Runde',
-                      style: AppTextStyles.titleMedium(context),
-                    ).animate().fadeIn(),
+                    Text('Aktuelle Runde',
+                            style: AppTextStyles.titleMedium(context))
+                        .animate()
+                        .fadeIn(),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
@@ -315,10 +307,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       ),
                       child: Column(
                         children: _players.map((player) {
-                          final isWinner = player.name == _roundWinnerName;
-                          final hasSubmitted = _submittedPlayers.contains(
-                            player.name,
-                          );
+                          final isWinner =
+                              player.name == _roundWinnerName;
+                          final hasSubmitted =
+                              _submittedPlayers.contains(player.name);
                           return RoundStatusRow(
                             playerName: player.name,
                             isWinner: isWinner,
@@ -351,17 +343,17 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                             onPressed: _currentRoundId == null
                                 ? null
                                 : () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => ScanScreen(
-                                        partyId: _party.id,
-                                        roundId: _currentRoundId!,
-                                        onConfirm: (points, imagePath) {
-                                          Navigator.of(context).pop();
-                                          _submitScore(points);
-                                        },
+                                      MaterialPageRoute(
+                                        builder: (_) => ScanScreen(
+                                          partyId: _party.id,
+                                          roundId: _currentRoundId!,
+                                          onConfirm: (points, imagePath) {
+                                            Navigator.of(context).pop();
+                                            _submitScore(points);
+                                          },
+                                        ),
                                       ),
                                     ),
-                                  ),
                             icon: const Icon(Icons.camera_alt_outlined),
                             label: const Text('Scan'),
                           ),
@@ -380,17 +372,16 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
                   if (_hasSubmittedScore || _hasReportedWin)
                     Center(
-                      child:
-                          Text(
-                                'Warten auf andere Spieler... ⏳',
-                                style: AppTextStyles.bodyLarge(
-                                  context,
-                                ).copyWith(color: AppColors.textSecondaryDark),
-                              )
-                              .animate(onPlay: (c) => c.repeat())
-                              .fadeIn(duration: 800.ms)
-                              .then()
-                              .fadeOut(duration: 800.ms),
+                      child: Text(
+                        'Warten auf andere Spieler... ⏳',
+                        style: AppTextStyles.bodyLarge(context).copyWith(
+                          color: AppColors.textSecondaryDark,
+                        ),
+                      )
+                          .animate(onPlay: (c) => c.repeat())
+                          .fadeIn(duration: 800.ms)
+                          .then()
+                          .fadeOut(duration: 800.ms),
                     ),
 
                   const SizedBox(height: 32),

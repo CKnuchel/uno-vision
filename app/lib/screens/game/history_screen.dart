@@ -68,19 +68,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 // App Bar
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
+                      horizontal: 8, vertical: 8),
                   child: Row(
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back_rounded),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
-                      Text(
-                        'Spielverlauf',
-                        style: AppTextStyles.titleLarge(context),
-                      ),
+                      Text('Spielverlauf',
+                          style: AppTextStyles.titleLarge(context)),
                     ],
                   ),
                 ),
@@ -89,46 +85,48 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   child: _isLoading
                       ? _buildSkeleton(isDark)
                       : _error != null
-                      ? Center(
-                          child: Text(
-                            _error!,
-                            style: AppTextStyles.bodyLarge(context),
-                          ),
-                        )
-                      : _rounds.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text('📋', style: TextStyle(fontSize: 48)),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Keine Runden vorhanden',
-                                style: AppTextStyles.bodyLarge(
-                                  context,
-                                ).copyWith(color: AppColors.textSecondaryDark),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(24),
-                          itemCount: _rounds.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 16),
-                          itemBuilder: (context, index) {
-                            return _RoundCard(
-                                  round: _rounds[index],
-                                  index: index,
-                                  isDark: isDark,
+                          ? Center(
+                              child: Text(_error!,
+                                  style: AppTextStyles.bodyLarge(context)),
+                            )
+                          : _rounds.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: [
+                                      const Text('📋',
+                                          style: TextStyle(fontSize: 48)),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Keine Runden vorhanden',
+                                        style: AppTextStyles.bodyLarge(
+                                                context)
+                                            .copyWith(
+                                          color: AppColors.textSecondaryDark,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 )
-                                .animate()
-                                .fadeIn(
-                                  delay: Duration(milliseconds: index * 100),
-                                )
-                                .slideY(begin: 0.2, end: 0);
-                          },
-                        ),
+                              : ListView.separated(
+                                  padding: const EdgeInsets.all(24),
+                                  itemCount: _rounds.length,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(height: 16),
+                                  itemBuilder: (context, index) {
+                                    return _RoundCard(
+                                      round: _rounds[index],
+                                      index: index,
+                                      isDark: isDark,
+                                    )
+                                        .animate()
+                                        .fadeIn(
+                                            delay: Duration(
+                                                milliseconds: index * 100))
+                                        .slideY(begin: 0.2, end: 0);
+                                  },
+                                ),
                 ),
               ],
             ),
@@ -144,8 +142,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       itemCount: 3,
       separatorBuilder: (_, _) => const SizedBox(height: 16),
       itemBuilder: (_, _) => Shimmer.fromColors(
-        baseColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-        highlightColor: isDark ? Colors.grey.shade700 : Colors.grey.shade100,
+        baseColor:
+            isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+        highlightColor:
+            isDark ? Colors.grey.shade700 : Colors.grey.shade100,
         child: Container(
           height: 120,
           decoration: BoxDecoration(
@@ -179,8 +179,12 @@ class _RoundCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.white,
+        border: Border.all(
+          color: Colors.grey.withValues(alpha: 0.1),
+        ),
         boxShadow: isDark
             ? []
             : [
@@ -199,18 +203,16 @@ class _RoundCard extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                    horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   color: AppColors.primary.withValues(alpha: 0.1),
                 ),
                 child: Text(
                   'Runde $roundId',
-                  style: AppTextStyles.labelMedium(
-                    context,
-                  ).copyWith(color: AppColors.primary),
+                  style: AppTextStyles.labelMedium(context).copyWith(
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
               const Spacer(),
@@ -246,7 +248,8 @@ class _RoundCard extends StatelessWidget {
                           width: 48,
                           height: 48,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const SizedBox(width: 48),
+                          errorBuilder: (_, _, _) =>
+                              const SizedBox(width: 48),
                         ),
                       ),
                     )
@@ -276,18 +279,16 @@ class _RoundCard extends StatelessWidget {
 
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
                       color: Colors.grey.withValues(alpha: 0.1),
                     ),
                     child: Text(
                       '${score['points']} Pkt.',
-                      style: AppTextStyles.labelMedium(
-                        context,
-                      ).copyWith(color: AppColors.textSecondaryDark),
+                      style: AppTextStyles.labelMedium(context).copyWith(
+                        color: AppColors.textSecondaryDark,
+                      ),
                     ),
                   ),
                 ],
