@@ -33,6 +33,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   List<DetectedCard> _detectedCards = [];
   bool _isProcessing = false;
   bool _cameraReady = false;
+  bool _hasScanned = false;
 
   @override
   void initState() {
@@ -75,7 +76,29 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
       if (image != null) {
         final cards = await ref.read(mlServiceProvider).detect(image);
-        setState(() => _detectedCards = cards);
+        setState(() {
+          _detectedCards = cards;
+          _hasScanned = true;
+        });
+
+        // Show feedback
+        if (mounted) {
+          if (cards.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Keine Karten erkannt. Versuche es erneut.'),
+                backgroundColor: AppColors.warning,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${cards.length} Karte${cards.length == 1 ? '' : 'n'} erkannt!'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -104,7 +127,29 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         final cards = kIsWeb
             ? <DetectedCard>[]
             : await ref.read(mlServiceProvider).detect(image);
-        setState(() => _detectedCards = cards);
+        setState(() {
+          _detectedCards = cards;
+          _hasScanned = true;
+        });
+
+        // Show feedback
+        if (mounted) {
+          if (cards.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Keine Karten erkannt. Versuche es erneut.'),
+                backgroundColor: AppColors.warning,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${cards.length} Karte${cards.length == 1 ? '' : 'n'} erkannt!'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -240,10 +285,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                       Text(
                         kIsWeb
                             ? 'Bitte Punkte manuell eingeben'
-                            : 'Tippe auf den Auslöser um zu scannen',
+                            : _hasScanned
+                                ? 'Keine Karten erkannt. Versuche es erneut.'
+                                : 'Tippe auf den Auslöser um zu scannen',
                         style: AppTextStyles.bodyMedium(
                           context,
-                        ).copyWith(color: AppColors.textSecondaryDark),
+                        ).copyWith(
+                          color: _hasScanned && !kIsWeb
+                              ? AppColors.warning
+                              : AppColors.textSecondaryDark,
+                        ),
                       )
                     else ...[
                       Expanded(

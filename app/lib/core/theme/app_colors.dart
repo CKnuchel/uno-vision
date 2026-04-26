@@ -23,6 +23,7 @@ class AppColors {
 
   // Status
   static const success = Color(0xFF34C759);
+  static const warning = Color(0xFFFF9500);
   static const error = Color(0xFFFF3B3B);
 
   // Shadows

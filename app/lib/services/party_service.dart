@@ -130,4 +130,15 @@ class PartyService {
       throw AppException(e.toString());
     }
   }
+
+  Future<void> leaveParty(int partyId) async {
+    try {
+      final uuid = await _getPlayerUUID();
+      await _client.post('/party/$partyId/leave', {
+        'player_uuid': uuid,
+      });
+    } on Exception catch (e) {
+      throw AppException(e.toString());
+    }
+  }
 }

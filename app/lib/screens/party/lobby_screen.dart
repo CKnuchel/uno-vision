@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -8,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/primary_button.dart';
 import '../game/game_screen.dart';
+import '../home/home_screen.dart';
 import '../../widgets/widgets.dart';
 import '../../models/models.dart';
 import '../../services/services.dart';
@@ -26,16 +28,30 @@ class LobbyScreen extends ConsumerStatefulWidget {
   ConsumerState<LobbyScreen> createState() => _LobbyScreenState();
 }
 
-class _LobbyScreenState extends ConsumerState<LobbyScreen> {
+class _LobbyScreenState extends ConsumerState<LobbyScreen>
+    with WidgetsBindingObserver {
   late Party _party;
   bool _isStarting = false;
+  bool _isLeaving = false;
   String _playerUUID = '';
+  StreamSubscription<WsEvent>? _wsSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _party = widget.party;
     _init();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App came back to foreground - refresh data and reconnect
+      _refreshParty();
+      final ws = ref.read(websocketServiceProvider);
+      ws.connect(_party.id, _playerUUID);
+    }
   }
 
   Future<void> _init() async {
@@ -45,15 +61,82 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     final ws = ref.read(websocketServiceProvider);
     ws.connect(_party.id, _playerUUID);
 
-    ws.events.listen((event) {
+    _wsSubscription = ws.events.listen((event) {
       if (!mounted) return;
       switch (event.event) {
         case WsEvents.playerJoined:
           _refreshParty();
+        case WsEvents.playerLeft:
+          _refreshParty();
+        case WsEvents.partyCancelled:
+          _handlePartyCancelled(event.payload);
         case WsEvents.gameStarted:
           _navigateToGame();
       }
     });
+  }
+
+  void _handlePartyCancelled(Map<String, dynamic> payload) {
+    final reason = payload['reason'] as String? ?? 'Party wurde abgebrochen';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(reason),
+        backgroundColor: AppColors.error,
+      ),
+    );
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
+
+  Future<bool> _onWillPop() async {
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Party verlassen?'),
+        content: const Text('Möchtest du die Party wirklich verlassen?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Verlassen'),
+          ),
+        ],
+      ),
+    );
+    return shouldLeave ?? false;
+  }
+
+  Future<void> _leaveParty() async {
+    final shouldLeave = await _onWillPop();
+    if (!shouldLeave) return;
+
+    setState(() => _isLeaving = true);
+    try {
+      await ref.read(partyServiceProvider).leaveParty(_party.id);
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLeaving = false);
+    }
   }
 
   Future<void> _refreshParty() async {
@@ -102,6 +185,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _wsSubscription?.cancel();
     ref.read(websocketServiceProvider).disconnect();
     super.dispose();
   }
@@ -111,36 +196,46 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final canStart = _party.players.length >= 2;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Hintergrund
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDark
-                    ? [const Color(0xFF0F1117), const Color(0xFF1A1D2E)]
-                    : [const Color(0xFFF5F5F5), const Color(0xFFFFEEEE)],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _leaveParty();
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // Hintergrund
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [const Color(0xFF0F1117), const Color(0xFF1A1D2E)]
+                      : [const Color(0xFFF5F5F5), const Color(0xFFFFEEEE)],
+                ),
               ),
             ),
-          ),
 
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
 
-                  // App Bar
-                  Row(
-                    children: [
-                      Text('UNO Vision',
-                          style: AppTextStyles.titleLarge(context)),
-                    ],
-                  ),
+                    // App Bar
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: _isLeaving ? null : _leaveParty,
+                        ),
+                        Text('UNO Vision',
+                            style: AppTextStyles.titleLarge(context)),
+                      ],
+                    ),
 
                   const SizedBox(height: 24),
 
@@ -320,12 +415,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 32),
-                ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

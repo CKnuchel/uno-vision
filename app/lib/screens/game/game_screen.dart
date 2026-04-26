@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/constants/storage_keys.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../game/results_screen.dart';
 import '../game/scan_screen.dart';
+import '../home/home_screen.dart';
 import '../../widgets/widgets.dart';
 import '../../models/models.dart';
 import '../../services/services.dart';
@@ -19,7 +21,8 @@ class GameScreen extends ConsumerStatefulWidget {
   ConsumerState<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends ConsumerState<GameScreen> {
+class _GameScreenState extends ConsumerState<GameScreen>
+    with WidgetsBindingObserver {
   late Party _party;
   late List<Player> _players;
   String? _roundWinnerName;
@@ -28,17 +31,43 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   bool _hasSubmittedScore = false;
   bool _isReportingWin = false;
   final Set<String> _submittedPlayers = {};
+  String _playerUUID = '';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _party = widget.party;
     _players = widget.party.players;
     _init();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App came back to foreground - refresh data and reconnect
+      _refreshParty();
+      final ws = ref.read(websocketServiceProvider);
+      ws.connect(_party.id, _playerUUID);
+    }
+  }
+
+  Future<void> _refreshParty() async {
+    try {
+      final updated =
+          await ref.read(partyServiceProvider).getPartyStatus(_party.id);
+      if (mounted) {
+        setState(() {
+          _party = updated;
+          _players = updated.players;
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<void> _init() async {
-    await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
+    _playerUUID = prefs.getString(StorageKeys.playerUUID) ?? '';
 
     final ws = ref.read(websocketServiceProvider);
     ws.events.listen((event) {
@@ -218,71 +247,115 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   }
 
   @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _confirmLeaveGame() async {
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Spiel verlassen?'),
+        content: const Text(
+          'Wenn du das Spiel verlässt, verlierst du deinen Fortschritt. '
+          'Möchtest du wirklich verlassen?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Verlassen'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLeave == true && mounted) {
+      ref.read(websocketServiceProvider).disconnect();
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isGolfMode = _party.mode == 'golf';
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Hintergrund
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDark
-                    ? [const Color(0xFF0F1117), const Color(0xFF1A1D2E)]
-                    : [const Color(0xFFF5F5F5), const Color(0xFFFFEEEE)],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _confirmLeaveGame();
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // Hintergrund
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [const Color(0xFF0F1117), const Color(0xFF1A1D2E)]
+                      : [const Color(0xFFF5F5F5), const Color(0xFFFFEEEE)],
+                ),
               ),
             ),
-          ),
 
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
 
-                  // Header
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color:
-                              AppColors.primary.withValues(alpha: 0.15),
-                        ),
-                        child: Text(
-                          isGolfMode ? '⛳ Golf' : '🏆 Classic',
-                          style:
-                              AppTextStyles.labelMedium(context).copyWith(
-                            color: AppColors.primary,
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color:
+                                AppColors.primary.withValues(alpha: 0.15),
+                          ),
+                          child: Text(
+                            isGolfMode ? '⛳ Golf' : '🏆 Classic',
+                            style:
+                                AppTextStyles.labelMedium(context).copyWith(
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: Colors.grey.withValues(alpha: 0.15),
-                        ),
-                        child: Text(
-                          '${_party.targetScore} Pkt.',
-                          style:
-                              AppTextStyles.labelMedium(context).copyWith(
-                            color: AppColors.textSecondaryDark,
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color: Colors.grey.withValues(alpha: 0.15),
+                          ),
+                          child: Text(
+                            '${_party.targetScore} Pkt.',
+                            style:
+                                AppTextStyles.labelMedium(context).copyWith(
+                              color: AppColors.textSecondaryDark,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ).animate().fadeIn(duration: 400.ms),
+                      ],
+                    ).animate().fadeIn(duration: 400.ms),
 
                   const SizedBox(height: 24),
 
@@ -395,12 +468,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                           .fadeOut(duration: 800.ms),
                     ),
 
-                  const SizedBox(height: 32),
-                ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

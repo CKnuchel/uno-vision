@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/constants/storage_keys.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../home/home_screen.dart';
@@ -27,23 +30,81 @@ class ResultsScreen extends ConsumerStatefulWidget {
   ConsumerState<ResultsScreen> createState() => _ResultsScreenState();
 }
 
-class _ResultsScreenState extends ConsumerState<ResultsScreen> {
+class _ResultsScreenState extends ConsumerState<ResultsScreen>
+    with WidgetsBindingObserver {
   late ConfettiController _confettiController;
   bool _isRestarting = false;
+  StreamSubscription<WsEvent>? _wsSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 4),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _confettiController.play();
     });
+    _listenToWebSocket();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App came back to foreground - reconnect WebSocket to receive party_restarted event
+      _reconnectWebSocket();
+    }
+  }
+
+  Future<void> _reconnectWebSocket() async {
+    final prefs = await SharedPreferences.getInstance();
+    final playerUUID = prefs.getString(StorageKeys.playerUUID) ?? '';
+    final ws = ref.read(websocketServiceProvider);
+    ws.connect(widget.party.id, playerUUID);
+  }
+
+  void _listenToWebSocket() {
+    final ws = ref.read(websocketServiceProvider);
+    _wsSubscription = ws.events.listen((event) {
+      if (!mounted) return;
+      if (event.event == WsEvents.partyRestarted) {
+        _handlePartyRestarted(event.payload);
+      }
+    });
+  }
+
+  Future<void> _handlePartyRestarted(Map<String, dynamic> payload) async {
+    final newPartyId = payload['new_party_id'] as int?;
+    if (newPartyId == null) return;
+
+    try {
+      final newParty =
+          await ref.read(partyServiceProvider).getPartyStatus(newPartyId);
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => LobbyScreen(party: newParty, isHost: false),
+          ),
+        );
+      }
+    } catch (e) {
+      // If fetching fails, show error but don't crash
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Beitreten: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _wsSubscription?.cancel();
     _confettiController.dispose();
     super.dispose();
   }

@@ -23,6 +23,8 @@ class WsEvents {
   WsEvents._();
 
   static const playerJoined = 'player_joined';
+  static const playerLeft = 'player_left';
+  static const partyCancelled = 'party_cancelled';
   static const gameStarted = 'game_started';
   static const roundWinner = 'round_winner';
   static const scoreUpdate = 'score_update';
