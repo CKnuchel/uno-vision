@@ -248,6 +248,7 @@ func (s *partyService) ReportWinner(ctx context.Context, partyID uint, req *dto.
 
 	s.hub.Broadcast(partyID, hub.EventRoundWinner, hub.RoundWinnerPayload{
 		PlayerName: player.Name,
+		PlayerUUID: player.UUID,
 		RoundID:    round.ID,
 	})
 
@@ -372,10 +373,11 @@ func (s *partyService) SubmitScore(ctx context.Context, partyID uint, req *dto.R
 		})
 	} else {
 		s.hub.Broadcast(partyID, hub.EventScoreUpdate, hub.ScoreUpdatePayload{
-			PlayerName: player.Name,
-			Points:     req.Points,
-			TotalScore: updatedScore,
-			Scores:     scores,
+			PlayerName:   player.Name,
+			Points:       req.Points,
+			TotalScore:   updatedScore,
+			Scores:       scores,
+			AllSubmitted: allSubmitted,
 		})
 	}
 

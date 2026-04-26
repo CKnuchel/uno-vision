@@ -18,14 +18,16 @@ type PlayerJoinedPayload struct {
 
 type RoundWinnerPayload struct {
 	PlayerName string `json:"player_name"`
+	PlayerUUID string `json:"player_uuid"`
 	RoundID    uint   `json:"round_id"`
 }
 
 type ScoreUpdatePayload struct {
-	PlayerName string       `json:"player_name"`
-	Points     int          `json:"points"`
-	TotalScore int          `json:"total_score"`
-	Scores     []ScoreEntry `json:"scores"`
+	PlayerName   string       `json:"player_name"`
+	Points       int          `json:"points"`
+	TotalScore   int          `json:"total_score"`
+	Scores       []ScoreEntry `json:"scores"`
+	AllSubmitted bool         `json:"all_submitted"`
 }
 
 type ScoreEntry struct {

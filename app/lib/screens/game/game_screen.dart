@@ -26,8 +26,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
   late Party _party;
   late List<Player> _players;
   String? _roundWinnerName;
+  String? _roundWinnerUUID;
   int? _currentRoundId;
-  bool _hasReportedWin = false;
   bool _hasSubmittedScore = false;
   bool _isReportingWin = false;
   final Set<String> _submittedPlayers = {};
@@ -81,8 +81,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
       case WsEvents.roundWinner:
         setState(() {
           _roundWinnerName = event.payload['player_name'];
+          _roundWinnerUUID = event.payload['player_uuid'];
           _currentRoundId = event.payload['round_id'];
-          _hasReportedWin = false;
           _hasSubmittedScore = false;
           _submittedPlayers.clear();
           _submittedPlayers.add(event.payload['player_name']);
@@ -90,6 +90,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
       case WsEvents.scoreUpdate:
         final scores = event.payload['scores'] as List?;
+        final allSubmitted = event.payload['all_submitted'] as bool? ?? false;
         if (scores != null) {
           setState(() {
             _players = scores
@@ -100,11 +101,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 .toList();
             _submittedPlayers.add(event.payload['player_name']);
 
-            // Alle haben eingereicht (Winner + alle Verlierer) → Runde fertig
-            if (_submittedPlayers.length >= _players.length) {
+            // Backend signals round complete → reset state
+            if (allSubmitted) {
               _roundWinnerName = null;
+              _roundWinnerUUID = null;
               _currentRoundId = null;
-              _hasReportedWin = false;
               _hasSubmittedScore = false;
               _submittedPlayers.clear();
             }
@@ -134,14 +135,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
   }
 
+  bool get _isCurrentPlayerWinner => _roundWinnerUUID == _playerUUID;
+
   Future<void> _reportWin() async {
     setState(() => _isReportingWin = true);
     try {
       final roundId =
           await ref.read(partyServiceProvider).reportWinner(_party.id);
+      // Note: The WebSocket event will set _roundWinnerUUID to our UUID
+      // so _isCurrentPlayerWinner will be true after the event arrives
       setState(() {
         _currentRoundId = roundId;
-        _hasReportedWin = true;
         _hasSubmittedScore = false;
       });
     } catch (e) {
@@ -409,15 +413,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   const Spacer(),
 
                   // Action Buttons
-                  if (!_hasReportedWin && _roundWinnerName == null)
+                  // Show "I won" button only when no round is active
+                  if (_roundWinnerName == null)
                     PrimaryButton(
                       label: 'Ich hab gewonnen! 👑',
                       onPressed: _reportWin,
                       isLoading: _isReportingWin,
                     ).animate().fadeIn().slideY(begin: 0.3, end: 0),
 
+                  // Show Scan/Manual buttons only for non-winners who haven't submitted
                   if (_roundWinnerName != null &&
-                      !_hasReportedWin &&
+                      !_isCurrentPlayerWinner &&
                       !_hasSubmittedScore) ...[
                     const SizedBox(height: 8),
                     Row(
@@ -454,7 +460,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     ).animate().fadeIn().slideY(begin: 0.3, end: 0),
                   ],
 
-                  if (_hasSubmittedScore || _hasReportedWin)
+                  // Show waiting message for winner or players who submitted
+                  if (_roundWinnerName != null &&
+                      (_hasSubmittedScore || _isCurrentPlayerWinner))
                     Center(
                       child: Text(
                         'Warten auf andere Spieler... ⏳',
