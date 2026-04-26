@@ -1,12 +1,14 @@
 package hub
 
 const (
-	EventPlayerJoined   = "player_joined"
-	EventGameStarted    = "game_started"
-	EventRoundWinner    = "round_winner"
-	EventScoreUpdate    = "score_update"
-	EventGameOver       = "game_over"
-	EventPartyRestarted = "party_restarted"
+	EventPlayerJoined    = "player_joined"
+	EventPlayerLeft      = "player_left"
+	EventPartyCancelled  = "party_cancelled"
+	EventGameStarted     = "game_started"
+	EventRoundWinner     = "round_winner"
+	EventScoreUpdate     = "score_update"
+	EventGameOver        = "game_over"
+	EventPartyRestarted  = "party_restarted"
 )
 
 // Payloads
@@ -39,4 +41,12 @@ type GameOverPayload struct {
 type PartyRestartedPayload struct {
 	NewPartyID   uint   `json:"new_party_id"`
 	NewPartyCode string `json:"new_party_code"`
+}
+
+type PlayerLeftPayload struct {
+	PlayerName string `json:"player_name"`
+}
+
+type PartyCancelledPayload struct {
+	Reason string `json:"reason"`
 }

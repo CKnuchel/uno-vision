@@ -83,6 +83,30 @@ func (h *PartyHandler) StartParty(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
+// LeaveParty handles POST /api/v1/party/:id/leave
+func (h *PartyHandler) LeaveParty(c *gin.Context) {
+	// Parse party ID from URL
+	partyID, err := parsePartyID(c)
+	if err != nil {
+		return
+	}
+
+	// Bind request body
+	var req dto.LeavePartyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Call service
+	if err := h.service.LeaveParty(c.Request.Context(), partyID, &req); err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
 // GetStatus handles GET /api/v1/party/:id
 func (h *PartyHandler) GetStatus(c *gin.Context) {
 	// Parse party ID from URL
@@ -214,7 +238,8 @@ func handleError(c *gin.Context, err error) {
 		errors.ErrPartyNotFinished,
 		errors.ErrPlayerAlreadyInParty, errors.ErrNotEnoughPlayers,
 		errors.ErrGameNotStarted, errors.ErrAlreadySubmitted,
-		errors.ErrWinnerCannotSubmit, errors.ErrInvalidScore:
+		errors.ErrWinnerCannotSubmit, errors.ErrInvalidScore,
+		errors.ErrCannotLeaveDuringGame:
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

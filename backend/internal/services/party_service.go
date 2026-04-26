@@ -19,6 +19,7 @@ type PartyService interface {
 	CreateParty(ctx context.Context, req *dto.CreatePartyRequest) (*dto.CreatePartyResponse, error)
 	JoinParty(ctx context.Context, code string, req *dto.JoinPartyRequest) (*dto.JoinPartyResponse, error)
 	StartParty(ctx context.Context, partyID uint, req *dto.StartPartyRequest) error
+	LeaveParty(ctx context.Context, partyID uint, req *dto.LeavePartyRequest) error
 	ReportWinner(ctx context.Context, partyID uint, req *dto.RoundWinnerRequest) (*dto.RoundWinnerResponse, error)
 	SubmitScore(ctx context.Context, partyID uint, req *dto.RoundScoreRequest) (*dto.RoundScoreResponse, error)
 	GetPartyStatus(ctx context.Context, partyID uint) (*dto.PartyStatusResponse, error)
@@ -168,6 +169,52 @@ func (s *partyService) StartParty(ctx context.Context, partyID uint, req *dto.St
 	}
 
 	s.hub.Broadcast(partyID, hub.EventGameStarted, struct{}{})
+
+	return nil
+}
+
+// LeaveParty implements [PartyService].
+func (s *partyService) LeaveParty(ctx context.Context, partyID uint, req *dto.LeavePartyRequest) error {
+	// Find party
+	party, err := s.partyRepo.FindByID(ctx, partyID)
+	if err != nil {
+		return errors.ErrPartyNotFound
+	}
+
+	// Only allow leaving during waiting status (lobby)
+	if party.Status != models.PartyStatusWaiting {
+		return errors.ErrCannotLeaveDuringGame
+	}
+
+	// Validate player is in party
+	player, err := s.validatePlayerInParty(ctx, partyID, req.PlayerUUID)
+	if err != nil {
+		return err
+	}
+
+	// Check if player is host
+	host, err := s.partyPlayerRepo.GetHostByPartyID(ctx, partyID)
+	if err != nil {
+		return err
+	}
+
+	if player.ID == host.ID {
+		// Host is leaving → cancel the party for everyone
+		if err := s.partyRepo.UpdateStatus(ctx, partyID, models.PartyStatusFinished); err != nil {
+			return err
+		}
+		s.hub.Broadcast(partyID, hub.EventPartyCancelled, hub.PartyCancelledPayload{
+			Reason: "Host hat die Party verlassen",
+		})
+	} else {
+		// Non-host leaving → just remove them
+		if err := s.partyPlayerRepo.Delete(ctx, partyID, player.ID); err != nil {
+			return err
+		}
+		s.hub.Broadcast(partyID, hub.EventPlayerLeft, hub.PlayerLeftPayload{
+			PlayerName: player.Name,
+		})
+	}
 
 	return nil
 }

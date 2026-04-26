@@ -34,6 +34,10 @@ type PartyRestartRequest struct {
 	PlayerUUID string `json:"player_uuid" binding:"required"`
 }
 
+type LeavePartyRequest struct {
+	PlayerUUID string `json:"player_uuid" binding:"required"`
+}
+
 // Responses
 type CreatePartyResponse struct {
 	PartyID   uint   `json:"party_id"`

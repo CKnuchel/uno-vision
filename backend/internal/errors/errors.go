@@ -17,4 +17,5 @@ var (
 	ErrWinnerCannotSubmit   = errors.New("winner cannot submit score")
 	ErrRoundNotFound        = errors.New("round not found")
 	ErrInvalidScore         = errors.New("score need to be bigger than 0")
+	ErrCannotLeaveDuringGame = errors.New("cannot leave during active game")
 )

@@ -35,6 +35,7 @@ func Setup(partyHandler *handlers.PartyHandler, wsHandler *handlers.WSHandler) *
 		v1.POST("/party/join/:code", partyHandler.JoinParty)
 		v1.GET("/party/:id", partyHandler.GetStatus)
 		v1.POST("/party/:id/start", partyHandler.StartParty)
+		v1.POST("/party/:id/leave", partyHandler.LeaveParty)
 		v1.POST("/party/:id/restart", partyHandler.RestartParty)
 
 		// Round routes

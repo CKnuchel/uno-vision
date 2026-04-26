@@ -14,6 +14,7 @@ type PartyPlayerRepository interface {
 	IsPlayerInParty(ctx context.Context, partyID, playerID uint) bool
 	UpdateScore(ctx context.Context, partyID, playerID uint, points int) error
 	GetHostByPartyID(ctx context.Context, partyID uint) (*models.Player, error) // <- Erster Eintrag = Host
+	Delete(ctx context.Context, partyID, playerID uint) error
 }
 
 type partyPlayerRepository struct {
@@ -90,6 +91,11 @@ func (r *partyPlayerRepository) UpdateScore(ctx context.Context, partyID uint, p
 	}
 
 	return nil
+}
+
+// Delete implements [PartyPlayerRepository].
+func (r *partyPlayerRepository) Delete(ctx context.Context, partyID uint, playerID uint) error {
+	return r.db.WithContext(ctx).Where("party_id = ? AND player_id = ?", partyID, playerID).Delete(&models.PartyPlayer{}).Error
 }
 
 func NewPartyPlayerRepository(db *gorm.DB) PartyPlayerRepository {
