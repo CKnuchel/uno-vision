@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -79,6 +80,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   void _handleWsEvent(WsEvent event) {
     switch (event.event) {
       case WsEvents.roundWinner:
+        HapticFeedback.mediumImpact();
         setState(() {
           _roundWinnerName = event.payload['player_name'];
           _roundWinnerUUID = event.payload['player_uuid'];
@@ -103,6 +105,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
             // Backend signals round complete → reset state
             if (allSubmitted) {
+              HapticFeedback.heavyImpact();
               _roundWinnerName = null;
               _roundWinnerUUID = null;
               _currentRoundId = null;
@@ -432,7 +435,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                           child: ElevatedButton.icon(
                             onPressed: _currentRoundId == null
                                 ? null
-                                : () => Navigator.of(context).push(
+                                : () {
+                                    HapticFeedback.lightImpact();
+                                    Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (_) => ScanScreen(
                                           partyId: _party.id,
@@ -443,7 +448,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
                                           },
                                         ),
                                       ),
-                                    ),
+                                    );
+                                  },
                             icon: const Icon(Icons.camera_alt_outlined),
                             label: const Text('Scan'),
                           ),
@@ -451,7 +457,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: _showManualScoreEntry,
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              _showManualScoreEntry();
+                            },
                             icon: const Icon(Icons.edit_outlined),
                             label: const Text('Manuell'),
                           ),
